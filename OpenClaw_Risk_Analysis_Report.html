@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw 风险分析报告 | 2026年3月</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --deep-navy: #1a2332;
+            --teal: #2d8b8b;
+            --seafoam: #a8dadc;
+            --cream: #f1faee;
+            --electric-blue: #0066ff;
+            --neon-cyan: #00ffff;
+            --dark-gray: #1e1e1e;
+            --warning-red: #e63946;
+            --warning-amber: #f4a261;
+            --success-green: #2a9d8f;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--deep-navy) 0%, #0d1117 100%);
+            color: var(--cream);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+        
+        /* Hero Section */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--deep-navy) 0%, #0f172a 50%, #1e1b4b 100%);
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 102, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(45, 139, 139, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 1000px;
+            padding: 2rem;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(230, 57, 70, 0.2);
+            border: 1px solid var(--warning-red);
+            color: var(--warning-red);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--seafoam) 50%, var(--electric-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-subtitle {
+            font-size: clamp(1.1rem, 2vw, 1.5rem);
+            color: var(--seafoam);
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+        
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 102, 255, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--electric-blue);
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--seafoam);
+            margin-top: 0.5rem;
+        }
+        
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+        
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(26, 35, 50, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav-logo {
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--electric-blue);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: var(--cream);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--electric-blue);
+        }
+        
+        /* Main Content */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+        
+        section {
+            margin-bottom: 6rem;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .section-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--electric-blue), var(--teal));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: white;
+        }
+        
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--cream);
+        }
+        
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--seafoam);
+            margin: 2rem 0 1rem;
+        }
+        
+        h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--electric-blue);
+            margin: 1.5rem 0 0.75rem;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+            color: rgba(241, 250, 238, 0.85);
+        }
+        
+        /* Alert Boxes */
+        .alert {
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid;
+        }
+        
+        .alert-critical {
+            background: rgba(230, 57, 70, 0.1);
+            border-color: var(--warning-red);
+        }
+        
+        .alert-warning {
+            background: rgba(244, 162, 97, 0.1);
+            border-color: var(--warning-amber);
+        }
+        
+        .alert-info {
+            background: rgba(0, 102, 255, 0.1);
+            border-color: var(--electric-blue);
+        }
+        
+        .alert-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .alert-critical .alert-title { color: var(--warning-red); }
+        .alert-warning .alert-title { color: var(--warning-amber); }
+        .alert-info .alert-title { color: var(--electric-blue); }
+        
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin: 2rem 0;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        th {
+            background: rgba(0, 102, 255, 0.2);
+            color: var(--electric-blue);
+            font-weight: 600;
+            text-align: left;
+            padding: 1rem;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: rgba(241, 250, 238, 0.9);
+        }
+        
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--electric-blue);
+            transform: translateY(-3px);
+        }
+        
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--electric-blue), var(--teal));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .card h4 {
+            margin-top: 0;
+        }
+        
+        /* Risk Matrix */
+        .risk-matrix {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .risk-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .risk-level {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .risk-critical { background: rgba(230, 57, 70, 0.3); color: var(--warning-red); }
+        .risk-high { background: rgba(244, 162, 97, 0.3); color: var(--warning-amber); }
+        .risk-medium { background: rgba(168, 218, 220, 0.3); color: var(--seafoam); }
+        
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--electric-blue), var(--teal));
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 2rem;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2rem;
+            top: 0.5rem;
+            width: 12px;
+            height: 12px;
+            background: var(--electric-blue);
+            border-radius: 50%;
+            transform: translateX(-5px);
+        }
+        
+        .timeline-date {
+            font-size: 0.875rem;
+            color: var(--electric-blue);
+            font-weight: 600;
+        }
+        
+        .timeline-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--cream);
+            margin: 0.25rem 0;
+        }
+        
+        .timeline-desc {
+            color: rgba(241, 250, 238, 0.7);
+            font-size: 0.9rem;
+        }
+        
+        /* Images */
+        .section-image {
+            width: 60%;
+            max-width: 800px;
+            border-radius: 16px;
+            margin: 2rem auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: block;
+            cursor: zoom-in;
+            transition: transform 0.3s ease;
+        }
+
+        .section-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* Image Modal/Lightbox */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 8px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5);
+            animation: zoomIn 0.3s ease;
+        }
+
+        @keyframes zoomIn {
+            from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            z-index: 2001;
+        }
+
+        .modal-close:hover,
+        .modal-close:focus {
+            color: var(--electric-blue);
+        }
+
+        .modal-caption {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: var(--seafoam);
+            font-size: 1rem;
+            padding: 10px;
+        }
+        
+        /* Code blocks */
+        code {
+            background: rgba(0, 102, 255, 0.1);
+            color: var(--neon-cyan);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: var(--seafoam);
+        }
+        
+        /* Quotes */
+        blockquote {
+            border-left: 4px solid var(--electric-blue);
+            padding-left: 1.5rem;
+            margin: 2rem 0;
+            font-style: italic;
+            color: var(--seafoam);
+        }
+        
+        blockquote cite {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: rgba(241, 250, 238, 0.6);
+            font-style: normal;
+        }
+        
+        /* Source Links */
+        .source-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: var(--electric-blue);
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-left: 0.5rem;
+        }
+        
+        .source-link:hover {
+            color: var(--neon-cyan);
+            text-decoration: underline;
+        }
+        
+        .source-link::before {
+            content: "🔗";
+            font-size: 0.75rem;
+        }
+        
+        .event-source {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .event-source a {
+            color: var(--electric-blue);
+            text-decoration: none;
+        }
+        
+        .event-source a:hover {
+            text-decoration: underline;
+        }
+        
+        .source-section {
+            background: rgba(0, 102, 255, 0.05);
+            border: 1px solid rgba(0, 102, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .source-section h4 {
+            color: var(--electric-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .source-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .source-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .source-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .source-list a {
+            color: var(--seafoam);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .source-list a:hover {
+            color: var(--electric-blue);
+            text-decoration: underline;
+        }
+        
+        .source-num {
+            background: var(--electric-blue);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 4rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 4rem;
+        }
+        
+        .footer-text {
+            color: rgba(241, 250, 238, 0.5);
+            font-size: 0.875rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .risk-matrix { grid-template-columns: repeat(2, 1fr); }
+            .hero-stats { grid-template-columns: 1fr; }
+        }
+        
+        /* Print styles */
+        @media print {
+            .nav, .scroll-indicator { display: none; }
+            body { background: white; color: black; }
+            .hero { min-height: auto; padding: 2rem 0; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-logo">🔒 OpenClaw 风险分析</div>
+        <ul class="nav-links">
+            <li><a href="#overview">概述</a></li>
+            <li><a href="#vulnerabilities">漏洞</a></li>
+            <li><a href="#supply-chain">供应链</a></li>
+            <li><a href="#injection">注入攻击</a></li>
+            <li><a href="#shadow-ai">Shadow AI</a></li>
+            <li><a href="#latest">最新动态</a></li>
+            <li><a href="#solutions">解决方案</a></li>
+        </ul>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span>⚠️</span> 高危安全警告
+            </div>
+            <h1>OpenClaw 风险分析报告</h1>
+            <p class="hero-subtitle">
+                开源 AI 代理框架的安全危机全景解析<br>
+                从 GitHub 星标第一到全行业封禁
+            </p>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <span class="stat-number">250K+</span>
+                    <span class="stat-label">GitHub Stars</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">150万</span>
+                    <span class="stat-label">凭据泄露风险</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">30K+</span>
+                    <span class="stat-label">实例被攻陷</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">93%</span>
+                    <span class="stat-label">实例存在漏洞</span>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M19 12l-7 7-7-7"/>
+            </svg>
+        </div>
+    </header>
+
+    <main>
+        <!-- Overview Section -->
+        <section id="overview">
+            <div class="section-header">
+                <div class="section-number">01</div>
+                <h2>概述</h2>
+            </div>
+            
+            <div class="alert alert-critical">
+                <div class="alert-title">🚨 核心警告</div>
+                <p>OpenClaw（又称 clawdbot 或 Moltbot）是一个开源 AI 代理框架，因其强大的自主能力而迅速流行。然而，其"无规则"的设计理念也带来了<strong>前所未有的安全和合规风险</strong>。思科 Talos 团队已将其标记为"安全噩梦"<a href="https://cn-sec.com/archives/5037604.html" target="_blank" class="source-link">来源</a>，Gartner 警告其构成"不可接受的安全风险"<a href="https://www.dwcon.cn/post/4724" target="_blank" class="source-link">来源</a>。</p>
+            </div>
+
+            <p>OpenClaw 于 2025 年 11 月由奥地利开发者推出，仅用两个月时间就超越了 Linux 和 React，以超过 <strong>25 万 GitHub 星标</strong>登顶历史第一。这款工具能够让 AI 代理自主完成复杂任务——从谈判买车、购买电话号码到雇佣人类完成任务。</p>
+
+            <p>然而，这种强大的能力也伴随着严重的安全隐患。从一键远程代码执行漏洞到供应链投毒攻击，从提示注入到 Shadow AI 风险，OpenClaw 正在成为全球企业面临的重大安全挑战。</p>
+
+            <img src="images/timeline.png" alt="OpenClaw 发展时间线" class="section-image">
+        </section>
+
+        <!-- Vulnerabilities Section -->
+        <section id="vulnerabilities">
+            <div class="section-header">
+                <div class="section-number">02</div>
+                <h2>关键安全漏洞</h2>
+            </div>
+
+            <div class="alert alert-critical">
+                <div class="alert-title">🔴 CVE-2026-25253 - 一键远程代码执行</div>
+                <p><strong>严重程度：</strong>严重 (CVSS 9.8+) | <strong>影响版本：</strong>&lt;= v2026.1.28 | <strong>修复版本：</strong>v2026.1.29+</p>
+            </div>
+
+            <p>该漏洞允许远程未认证攻击者通过 WebSocket 认证令牌窃取实现"一键远程代码执行"<a href="https://www.runzero.com/blog/openclaw/" target="_blank" class="source-link">来源</a>。澳大利亚网络安全公司 Dvuln 证实：漏洞可致 <strong>"一秒搬空"</strong> 敏感数据<a href="https://finance.sina.com.cn/jjxw/2026-03-03/doc-inhpspms7608021.shtml" target="_blank" class="source-link">来源</a>。</p>
+
+            <p><strong>官方安全公告：</strong><a href="https://github.com/openclaw/openclaw/security/advisories/GHSA-g8p2-7wf7-98mq" target="_blank" class="source-link">GitHub Security Advisory</a> | <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-25253" target="_blank" class="source-link">NVD/CVE 详情</a></p>
+
+            <img src="images/vulnerability.png" alt="CVE-2026-25253 攻击链" class="section-image">
+
+            <h3>攻击场景</h3>
+            <ol>
+                <li>攻击者构造恶意网页或链接</li>
+                <li>诱导用户点击，触发 <code>gatewayUrl</code> 参数注入</li>
+                <li>窃取 WebSocket 认证令牌</li>
+                <li>利用令牌执行任意代码</li>
+                <li>实现完全系统接管</li>
+            </ol>
+
+            <h3>漏洞统计</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>指标</th>
+                            <th>数值</th>
+                            <th>影响/来源</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>已发现安全缺陷</td>
+                            <td>512 个</td>
+                            <td>8 个关键级别 <a href="https://www.kaspersky.com/blog/openclaw-vulnerabilities-exposed/55263/" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                        <tr>
+                            <td>CVE 编号</td>
+                            <td>9 个</td>
+                            <td>持续增加中 <a href="https://blog.cyberdesserts.com/openclaw-malicious-skills-security/" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                        <tr>
+                            <td>暴露实例</td>
+                            <td>135,000+</td>
+                            <td>面临直接风险 <a href="https://www.bitsight.com/blog/openclaw-ai-security-risks-exposed-instances" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                        <tr>
+                            <td>存在漏洞实例</td>
+                            <td>93%</td>
+                            <td>CISO 调研数据 <a href="https://www.dwcon.cn/post/4724" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>其他已披露漏洞</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>漏洞类型</th>
+                            <th>CVSS评分</th>
+                            <th>来源</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>认证绕过 (Authentication Bypass)</td>
+                            <td>7.1</td>
+                            <td><a href="https://www.praetorian.com/blog/praetorian-guard-finds-critical-flaws-in-openclaw-and-what-it-means-for-your-software-supply-chain/" target="_blank" class="source-link">Praetorian Guard</a></td>
+                        </tr>
+                        <tr>
+                            <td>路径遍历 (Path Traversal)</td>
+                            <td>7.5</td>
+                            <td><a href="https://www.praetorian.com/blog/praetorian-guard-finds-critical-flaws-in-openclaw-and-what-it-means-for-your-software-supply-chain/" target="_blank" class="source-link">Praetorian Guard</a></td>
+                        </tr>
+                        <tr>
+                            <td>跨会话数据泄露 (Cross Session Leak)</td>
+                            <td>未公开</td>
+                            <td><a href="https://www.giskard.ai/knowledge/openclaw-security-vulnerabilities-include-data-leakage-and-prompt-injection-risks" target="_blank" class="source-link">Giskard</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Supply Chain Section -->
+        <section id="supply-chain">
+            <div class="section-header">
+                <div class="section-number">03</div>
+                <h2>供应链攻击风险</h2>
+            </div>
+
+            <div class="alert alert-warning">
+                <div class="alert-title">⚠️ ClawHub 恶意技能危机</div>
+                <p>已发现 <strong>1,184+ 个恶意技能</strong> 存在于 ClawHub<a href="https://www.esecurityplanet.com/threats/hundreds-of-malicious-skills-found-in-openclaws-clawhub/" target="_blank" class="source-link">来源</a>，其中 <strong>341 个</strong> 被确认用于数据窃取<a href="https://thehackernews.com/2026/02/researchers-find-341-malicious-clawhub.html" target="_blank" class="source-link">来源</a>，<strong>11.9%</strong> 的插件含有恶意代码<a href="https://snyk.io/blog/clawhub-malicious-google-skill-openclaw-malware/" target="_blank" class="source-link">来源</a>。</p>
+            </div>
+
+            <img src="images/supply_chain.png" alt="供应链攻击示意图" class="section-image">
+
+            <h3>典型攻击：ClawHavoc</h3>
+            
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon">🎭</div>
+                    <h4>社会工程学诱导</h4>
+                    <p>恶意技能 <code>google-qx4</code> 伪装成 Google 集成工具，在 SKILL.md 的 "Prerequisites" 部分植入恶意指令，诱导用户手动下载并执行恶意软件。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📦</div>
+                    <h4>载荷投递</h4>
+                    <p>恶意载荷托管在 GitHub（加密 ZIP）和 rentry.co，绕过自动安全扫描机制，针对 Windows 和 macOS/Linux 双平台。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🦠</div>
+                    <h4>窃密行为</h4>
+                    <p>安装 Atomic Stealer 窃密木马，窃取凭证、API 密钥和加密钱包，扫描 <code>~/.clawdbot/.env</code> 文件获取敏感配置。</p>
+                </div>
+            </div>
+
+            <h3>攻击链</h3>
+            <pre><code>用户安装恶意技能 → 执行前置条件命令 → 下载恶意载荷 
+→ 安装后门/窃密器 → 持续窃取数据 → 建立加密隧道</code></pre>
+        </section>
+
+        <!-- Prompt Injection Section -->
+        <section id="injection">
+            <div class="section-header">
+                <div class="section-number">04</div>
+                <h2>提示注入攻击</h2>
+            </div>
+
+            <p>OpenClaw 的 AI 助手会处理外部不可信内容（网页、文档、邮件），攻击者可在这些内容中嵌入隐藏指令，操纵 AI 行为。</p>
+
+            <img src="images/prompt_injection.png" alt="提示注入攻击示意图" class="section-image">
+
+            <h3>攻击场景</h3>
+            
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon">🚪</div>
+                    <h4>AI 后门建立</h4>
+                    <p>攻击者在文档中嵌入隐藏提示，OpenClaw 处理文档时执行恶意指令，添加恶意集成到 SOUL.md 实现持久化。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📤</div>
+                    <h4>数据外泄</h4>
+                    <p>诱导 AI 将敏感数据发送到攻击者服务器，通过看似无害的指令实现数据渗透，跨会话泄露其他用户的 API 密钥。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">💻</div>
+                    <h4>任意代码执行</h4>
+                    <p>通过精心构造的提示触发代码执行，修改系统配置或安装恶意软件，绕过传统安全控制机制。</p>
+                </div>
+            </div>
+
+            <h3>攻击向量</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>攻击向量</th>
+                            <th>描述</th>
+                            <th>风险等级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>恶意网页</td>
+                            <td>包含隐藏提示的网页内容</td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                        </tr>
+                        <tr>
+                            <td>钓鱼邮件</td>
+                            <td>嵌入指令的邮件附件</td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                        </tr>
+                        <tr>
+                            <td>污染文档</td>
+                            <td>包含后门指令的 PDF/Word</td>
+                            <td><span class="risk-level risk-high">中</span></td>
+                        </tr>
+                        <tr>
+                            <td>未经验证工具</td>
+                            <td>第三方工具中的隐藏行为</td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Shadow AI Section -->
+        <section id="shadow-ai">
+            <div class="section-header">
+                <div class="section-number">05</div>
+                <h2>Shadow AI 风险</h2>
+            </div>
+
+            <p>Shadow AI 指未经 IT 部门批准、由员工私自部署在企业网络中的 AI 代理。OpenClaw 的易用性使其成为 Shadow AI 的典型代表。</p>
+
+            <img src="images/shadow_ai.png" alt="Shadow AI 风险示意图" class="section-image">
+
+            <h3>企业面临的风险</h3>
+            
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon">👁️</div>
+                    <h4>可见性缺失</h4>
+                    <p>安全团队无法发现网络中的 OpenClaw 实例，缺乏集中监控和审计能力，无法评估实际暴露面。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🔑</div>
+                    <h4>权限滥用</h4>
+                    <p>OpenClaw 获得高权限访问 SaaS 应用，绕过传统身份安全控制，成为内部威胁的放大器。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📊</div>
+                    <h4>数据泄露</h4>
+                    <p>Shadow Agents 可访问敏感企业数据，通过恶意技能或提示注入外泄数据，难以追踪数据流向。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">⚖️</div>
+                    <h4>合规风险</h4>
+                    <p>违反数据保护法规（GDPR、CCPA 等），无法满足审计要求，面临监管处罚。</p>
+                </div>
+            </div>
+
+            <h3>行业反应</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>组织</th>
+                            <th>措施</th>
+                            <th>原因/来源</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Meta</td>
+                            <td>全面禁止</td>
+                            <td>不可预测行为和数据风险 <a href="https://www.immersivelabs.com/resources/c7-blog/openclaw-what-you-need-to-know-before-it-claws-its-way-into-your-organization" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                        <tr>
+                            <td>谷歌</td>
+                            <td>封禁账号</td>
+                            <td>OAuth 滥用和系统过载 <a href="https://finance.sina.com.cn/tech/roll/2026-02-26/doc-inhpefhe4256181.shtml" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                        <tr>
+                            <td>Anthropic</td>
+                            <td>禁止 OAuth</td>
+                            <td>Token 套利行为 <a href="https://t.cj.sina.com.cn/articles/view/2833534593/a8e44e8102001b3t8?from=tech" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                        <tr>
+                            <td>韩国大厂</td>
+                            <td>禁止安装</td>
+                            <td>数据泄露风险 <a href="https://h5.ifeng.com/c/vivoArticle/v0021oYl1mM2gY9dj-_olsrOki57-_r1keEv--bIV3rzxd-_--WQ__?vivoBusiness=hiboardnews" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                        <tr>
+                            <td>中国工信部</td>
+                            <td>官方预警</td>
+                            <td>国家安全风险 <a href="https://www.secrss.com/articles/87654" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Latest News Section -->
+        <section id="latest">
+            <div class="section-header">
+                <div class="section-number">06</div>
+                <h2>最新动态</h2>
+            </div>
+
+            <div class="alert alert-info">
+                <div class="alert-title">📅 截至 2026年3月5日</div>
+                <p>本章节整合了最新的安全事件、行业封禁动态和官方预警信息。</p>
+            </div>
+
+            <h3>重大事件时间线</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">2025年11月</div>
+                    <div class="timeline-title">OpenClaw 正式发布</div>
+                    <div class="timeline-desc">奥地利开发者推出这款开源 AI 代理框架</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2026年1月31日</div>
+                    <div class="timeline-title">大规模数据泄露事件</div>
+                    <div class="timeline-desc">超过 150 万个 Agent 凭据面临泄露风险，30,000+ 实例被确认攻陷 <a href="https://www.xtcaq.com/nd.jsp?id=10893" target="_blank" class="source-link">来源</a></div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2026年2月5日</div>
+                    <div class="timeline-title">中国工信部发布官方预警</div>
+                    <div class="timeline-desc">NVDB 监测发现 OpenClaw 存在较高安全风险，极易引发网络攻击、信息泄露 <a href="https://www.secrss.com/articles/87654" target="_blank" class="source-link">来源</a></div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2026年2月20日</div>
+                    <div class="timeline-title">Anthropic 更新服务条款</div>
+                    <div class="timeline-desc">明确禁止在 OpenClaw 中使用 OAuth 授权，定义为"token 套利"行为 <a href="https://t.cj.sina.com.cn/articles/view/2833534593/a8e44e8102001b3t8?from=tech" target="_blank" class="source-link">来源</a></div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2026年2月25日</div>
+                    <div class="timeline-title">谷歌大规模封禁</div>
+                    <div class="timeline-desc">谷歌在 Antigravity 平台上封禁通过 OpenClaw 接入的开发者账号，指控"恶意使用" <a href="https://finance.sina.com.cn/tech/roll/2026-02-26/doc-inhpefhe4256181.shtml" target="_blank" class="source-link">来源</a></div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2026年3月初</div>
+                    <div class="timeline-title">登顶 GitHub 星标第一</div>
+                    <div class="timeline-desc">OpenClaw 以 25万+ 星标超越 Linux，成为 GitHub 软件星标历史第一 <a href="https://finance.sina.com.cn/wm/2026-03-03/doc-inhpsicw4778277.shtml" target="_blank" class="source-link">来源</a></div>
+                </div>
+            </div>
+
+            <h3>现象级应用案例</h3>
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon">🚗</div>
+                    <h4>AI 砍价买车</h4>
+                    <p>波士顿工程师使用 OpenClaw 谈判购买 Hyundai Palisade，成功节省 <strong>4,200 美元</strong> <a href="https://news.pedaily.cn/202602/560989.shtml" target="_blank" class="source-link">来源</a></p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📞</div>
+                    <h4>自动买号打电话</h4>
+                    <p>OpenClaw 可自主完成电话号码购买、拨打电话等操作，无需人工干预 <a href="https://news.pedaily.cn/202602/560989.shtml" target="_blank" class="source-link">来源</a></p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">💰</div>
+                    <h4>商业机会</h4>
+                    <p>有人靠提供 OpenClaw 安装服务 "<strong>赚了 26 万</strong>"，病毒式传播压倒安全意识 <a href="http://news.10jqka.com.cn/20260304/c675075916.shtml" target="_blank" class="source-link">来源</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Risk Matrix Section -->
+        <section id="risk-matrix">
+            <div class="section-header">
+                <div class="section-number">07</div>
+                <h2>风险矩阵</h2>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>风险类别</th>
+                            <th>严重程度</th>
+                            <th>发生概率</th>
+                            <th>影响范围</th>
+                            <th>修复难度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>RCE 漏洞 (CVE-2026-25253)</td>
+                            <td><span class="risk-level risk-critical">严重</span></td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                            <td>所有实例</td>
+                            <td><span class="risk-level risk-medium">低</span></td>
+                        </tr>
+                        <tr>
+                            <td>供应链攻击</td>
+                            <td><span class="risk-level risk-critical">严重</span></td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                            <td>ClawHub 用户</td>
+                            <td><span class="risk-level risk-high">中</span></td>
+                        </tr>
+                        <tr>
+                            <td>提示注入</td>
+                            <td><span class="risk-level risk-high">高</span></td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                            <td>所有用户</td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                        </tr>
+                        <tr>
+                            <td>Shadow AI</td>
+                            <td><span class="risk-level risk-high">高</span></td>
+                            <td><span class="risk-level risk-critical">极高</span></td>
+                            <td>企业环境</td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                        </tr>
+                        <tr>
+                            <td>数据外泄</td>
+                            <td><span class="risk-level risk-high">高</span></td>
+                            <td><span class="risk-level risk-high">中</span></td>
+                            <td>所有用户</td>
+                            <td><span class="risk-level risk-high">中</span></td>
+                        </tr>
+                        <tr>
+                            <td>配置错误</td>
+                            <td><span class="risk-level risk-high">中</span></td>
+                            <td><span class="risk-level risk-critical">高</span></td>
+                            <td>暴露实例</td>
+                            <td><span class="risk-level risk-medium">低</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Recommendations Section -->
+        <section id="recommendations">
+            <div class="section-header">
+                <div class="section-number">08</div>
+                <h2>缓解建议</h2>
+            </div>
+
+            <div class="alert alert-critical">
+                <div class="alert-title">🚨 立即行动</div>
+                <ol>
+                    <li><strong>紧急升级：</strong>立即升级至 OpenClaw v2026.1.29 或更高版本，验证 gatewayUrl 配置合法性</li>
+                    <li><strong>网络隔离：</strong>将 OpenClaw 运行在隔离环境中，使用专用硬件或虚拟机</li>
+                    <li><strong>禁用外部访问：</strong>绑定至 localhost (127.0.0.1)，关闭不必要的端口暴露</li>
+                </ol>
+            </div>
+
+            <h3>分层建议</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用户类型</th>
+                            <th>建议措施</th>
+                            <th>优先级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>个人用户</td>
+                            <td>隔离环境使用、不安装未知技能、及时更新</td>
+                            <td><span class="risk-level risk-high">高</span></td>
+                        </tr>
+                        <tr>
+                            <td>企业用户</td>
+                            <td>全面禁止或严格管控、部署监控工具、制定政策</td>
+                            <td><span class="risk-level risk-critical">极高</span></td>
+                        </tr>
+                        <tr>
+                            <td>机关单位</td>
+                            <td>禁止使用、加强网络安全审查、关注官方预警</td>
+                            <td><span class="risk-level risk-critical">极高</span></td>
+                        </tr>
+                        <tr>
+                            <td>安全团队</td>
+                            <td>纳入威胁模型、建立检测能力、准备应急响应</td>
+                            <td><span class="risk-level risk-high">高</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>专家观点</h3>
+            <blockquote>
+                "OpenClaw 证明了 Shadow Agents 已经存在于您的网络中。"
+                <cite>—— <a href="https://www.firetail.ai/blog/openclaw-proved-it-you-have-shadow-agents-on-your-network-right-now" target="_blank" style="color: var(--electric-blue);">FireTail 安全研究</a></cite>
+            </blockquote>
+            <blockquote>
+                "默认不安全的设计，加上病毒式传播，正在制造一场完美的安全风暴。"
+                <cite>—— <a href="https://cn-sec.com/archives/5037604.html" target="_blank" style="color: var(--electric-blue);">思科 Talos 团队</a></cite>
+            </blockquote>
+        </section>
+
+        <!-- Security Solutions Section -->
+        <section id="solutions">
+            <div class="section-header">
+                <div class="section-number">09</div>
+                <h2>安全解决方案与厂商产品</h2>
+            </div>
+
+            <p>针对 OpenClaw 带来的安全风险，安全厂商和云服务商已推出多种解决方案。以下是主要的安全产品分类和代表性厂商。</p>
+
+            <img src="images/solutions_hero.png" alt="安全解决方案概览" class="section-image">
+
+            <h3>SASE/SSE 厂商方案</h3>
+
+            <img src="images/sase_architecture.png" alt="SASE/SSE 安全架构" class="section-image">
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon">🛡️</div>
+                    <h4>Zscaler AI Guardrails</h4>
+                    <p>阻断 OpenClaw 下载、TLS 流量深度检查、DLP 数据防泄漏、LLM 访问控制 <a href="https://www.zscaler.com/blogs/product-insights/guide-openclaw-and-securing-it-zscaler" target="_blank" class="source-link">来源</a></p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🔍</div>
+                    <h4>Netskope Intelligent SSE</h4>
+                    <p>URL 过滤阻断 OpenClaw、交易事件检测安装、用户风险教育 <a href="https://www.netskope.com/blog/moltbot-clawdbot-the-risky-personal-ai-agent-and-netskope-protection" target="_blank" class="source-link">来源</a></p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">☁️</div>
+                    <h4>Cato Networks SASE</h4>
+                    <p>AI 代理流量可视化、策略执行、Shadow AI 发现 <a href="https://www.catonetworks.com/blog/when-ai-can-act-governing-openclaw/" target="_blank" class="source-link">来源</a></p>
+                </div>
+            </div>
+
+            <h3>EDR/XDR 平台</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>厂商</th>
+                            <th>产品</th>
+                            <th>核心功能</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>CrowdStrike</strong></td>
+                            <td>Falcon 平台</td>
+                            <td>Falcon SIEM 可视化、Falcon for IT 移除 OpenClaw、Falcon AIDR 阻断提示注入 <a href="https://www.crowdstrike.com/en-us/blog/what-security-teams-need-to-know-about-openclaw-ai-super-agent/" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>SentinelOne</strong></td>
+                            <td>OneClaw</td>
+                            <td>AI 代理发现与可观测性、CLI 自动检测、浏览器活动捕获、风险热图 <a href="https://www.sentinelone.com/blog/oneclaw-discovery-and-observability-for-the-agentic-era/" target="_blank" class="source-link">来源</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Shadow AI 发现与治理</h3>
+
+            <img src="images/shadow_ai_detection.png" alt="Shadow AI 检测与治理" class="section-image">
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon">👁️</div>
+                    <h4>Nudge Security</h4>
+                    <p>实时 AI-to-SaaS 连接可视化、风险 OAuth 授权标记、直接撤销能力、自动化 AI 治理 <a href="https://www.nudgesecurity.com/post/from-github-star-to-security-nightmare-what-openclaw-ai-means-for-enterprise-saas-data" target="_blank" class="source-link">来源</a></p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🔥</div>
+                    <h4>FireTail</h4>
+                    <p>Shadow AI 发现、API 行为监控、OpenClaw 事件响应 <a href="https://www.firetail.ai/blog/openclaw-proved-it-you-have-shadow-agents-on-your-network-right-now" target="_blank" class="source-link">来源</a></p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🔎</div>
+                    <h4>Reco</h4>
+                    <p>新兴风险标签检测、SaaS-to-SaaS 集成映射、高风险权限审计 <a href="https://www.reco.ai/blog/openclaw-the-ai-agent-security-crisis-unfolding-right-now" target="_blank" class="source-link">来源</a></p>
+                </div>
+            </div>
+
+            <h3>云服务商方案</h3>
+            <div class="alert alert-info">
+                <div class="alert-title">🌋 火山引擎 - 业界首个 AI 助手安全方案</div>
+                <p>提供<strong>三层纵深防护</strong>：平台安全（访问控制、指令过滤、执行沙箱）、AI 助手安全（防提示词注入、高危操作拦截、敏感信息脱敏）、供应链安全（Skills 深度扫描）。限时免费试用。 <a href="https://www.53ai.com/news/Openclaw/2026021469754.html" target="_blank" class="source-link">来源</a></p>
+            </div>
+
+            <h3>开源安全工具</h3>
+
+            <img src="images/open_source_tools.png" alt="开源安全工具生态" class="section-image">
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>工具名称</th>
+                            <th>类型</th>
+                            <th>功能</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ClawSecure</strong></td>
+                            <td>免费审计工具</td>
+                            <td>55+ 威胁模式检测、OWASP ASI Top 10 覆盖、ClawHavoc 恶意软件检测、24/7 监控 <a href="https://www.clawsecure.ai/" target="_blank" class="source-link">官网</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>OpenClaw Security Monitor</strong></td>
+                            <td>开源监控</td>
+                            <td>40点安全扫描、IOC 数据库、Web 仪表板、CVE-2026-25253 检测 <a href="https://github.com/adibirzu/openclaw-security-monitor" target="_blank" class="source-link">GitHub</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>OpenClaw Scanner</strong></td>
+                            <td>开源扫描器</td>
+                            <td>检测企业网络中的 OpenClaw 实例、识别暴露的 AI 代理</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>身份安全与访问管理</h3>
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon">🔐</div>
+                    <h4>CyberArk</h4>
+                    <p>强制执行现代身份安全控制、最小权限原则、AI 代理凭证管理 <a href="https://www.cyberark.com/resources/agentic-ai-security/how-autonomous-ai-agents-like-openclaw-are-reshaping-enterprise-identity-security" target="_blank" class="source-link">来源</a></p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🆔</div>
+                    <h4>Auth0 / Okta</h4>
+                    <p>OpenClaw 应用集成安全、多因素认证、AI 代理身份生命周期管理 <a href="https://auth0.com/blog/five-step-guide-securing-moltbot-ai-agent/" target="_blank" class="source-link">来源</a></p>
+                </div>
+            </div>
+
+            <h3>解决方案选型建议</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>企业规模</th>
+                            <th>推荐方案</th>
+                            <th>预算范围</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>个人/小团队</strong></td>
+                            <td>开源工具（ClawSecure + OpenClaw Scanner）</td>
+                            <td>免费</td>
+                        </tr>
+                        <tr>
+                            <td><strong>中小企业</strong></td>
+                            <td>Netskope SSE + CrowdStrike Falcon</td>
+                            <td>$5-15/用户/月</td>
+                        </tr>
+                        <tr>
+                            <td><strong>大型企业</strong></td>
+                            <td>Zscaler SASE + SentinelOne OneClaw + Nudge Security</td>
+                            <td>$20-50/用户/月</td>
+                        </tr>
+                        <tr>
+                            <td><strong>超大规模</strong></td>
+                            <td>火山引擎企业方案 + 定制化开发</td>
+                            <td>定制报价</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Conclusion Section -->
+        <section id="conclusion">
+            <div class="section-header">
+                <div class="section-number">10</div>
+                <h2>结论与建议</h2>
+            </div>
+
+            <p>OpenClaw 代表了 AI 代理技术的强大能力，但其"无规则"设计理念也带来了前所未有的安全风险。从一键 RCE 漏洞到供应链攻击，从提示注入到 Shadow AI，这些风险不仅影响个人用户，更对企业安全构成严峻挑战。</p>
+
+            <div class="alert alert-info">
+                <div class="alert-title">📊 关键数据回顾</div>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li>25万+ GitHub 星标（历史第一）</li>
+                    <li>150万+ Agent 凭据泄露风险</li>
+                    <li>30,000+ 实例被攻陷</li>
+                    <li>11.9% 插件含恶意代码</li>
+                    <li>93% 实例存在安全漏洞</li>
+                </ul>
+            </div>
+
+            <h3>分层建议</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用户类型</th>
+                            <th>建议措施</th>
+                            <th>优先级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>个人用户</td>
+                            <td>隔离环境使用、不安装未知技能、及时更新</td>
+                            <td><span class="risk-level risk-high">高</span></td>
+                        </tr>
+                        <tr>
+                            <td>企业用户</td>
+                            <td>全面禁止或严格管控、部署监控工具、制定政策</td>
+                            <td><span class="risk-level risk-critical">极高</span></td>
+                        </tr>
+                        <tr>
+                            <td>机关单位</td>
+                            <td>禁止使用、加强网络安全审查、关注官方预警</td>
+                            <td><span class="risk-level risk-critical">极高</span></td>
+                        </tr>
+                        <tr>
+                            <td>安全团队</td>
+                            <td>纳入威胁模型、建立检测能力、准备应急响应</td>
+                            <td><span class="risk-level risk-high">高</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>风险趋势预测</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>时间范围</th>
+                            <th>预期发展</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>短期（3-6个月）</strong></td>
+                            <td>更多 CVE 漏洞披露、ClawHub 恶意技能增长、Shadow AI 事件频发</td>
+                        </tr>
+                        <tr>
+                            <td><strong>中期（6-12个月）</strong></td>
+                            <td>大规模数据泄露可能发生、行业标准出台、安全工具生态成熟</td>
+                        </tr>
+                        <tr>
+                            <td><strong>长期（1-2年）</strong></td>
+                            <td>AI 代理安全成为核心领域、零信任架构深度融合、监管框架完善</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <blockquote>
+                "OpenClaw 证明了 Shadow Agents 已经存在于您的网络中。"
+                <cite>—— <a href="https://www.firetail.ai/blog/openclaw-proved-it-you-have-shadow-agents-on-your-network-right-now" target="_blank" style="color: var(--electric-blue);">FireTail 安全研究</a></cite>
+            </blockquote>
+            <blockquote>
+                "默认不安全的设计，加上病毒式传播，正在制造一场完美的安全风暴。"
+                <cite>—— <a href="https://cn-sec.com/archives/5037604.html" target="_blank" style="color: var(--electric-blue);">思科 Talos 团队</a></cite>
+            </blockquote>
+        </section>
+
+        <!-- References Section -->
+        <section id="references">
+            <div class="section-header">
+                <div class="section-number">12</div>
+                <h2>参考资料</h2>
+            </div>
+
+            <div class="source-section">
+                <h4>📰 国际安全研究</h4>
+                <ul class="source-list">
+                    <li><span class="source-num">1</span><a href="https://www.immersivelabs.com/resources/c7-blog/openclaw-what-you-need-to-know-before-it-claws-its-way-into-your-organization" target="_blank">Immersive Labs - OpenClaw Security Review</a></li>
+                    <li><span class="source-num">2</span><a href="https://fortune.com/2026/02/12/openclaw-ai-agents-security-risks-beware/" target="_blank">Fortune - OpenClaw AI Agents Security Risks</a></li>
+                    <li><span class="source-num">3</span><a href="https://www.trendmicro.com/en_us/research/26/b/what-openclaw-reveals-about-agentic-assistants.html" target="_blank">Trend Micro - Viral AI, Invisible Risks</a></li>
+                    <li><span class="source-num">4</span><a href="https://www.kaspersky.com/blog/openclaw-vulnerabilities-exposed/55263/" target="_blank">Kaspersky - OpenClaw Vulnerabilities Exposed</a></li>
+                    <li><span class="source-num">5</span><a href="https://businessinsights.bitdefender.com/technical-advisory-openclaw-exploitation-enterprise-networks" target="_blank">Bitdefender - Technical Advisory: OpenClaw Exploitation</a></li>
+                    <li><span class="source-num">6</span><a href="https://snyk.io/blog/clawhub-malicious-google-skill-openclaw-malware/" target="_blank">Snyk - ClawHub Malicious Google Skill Analysis</a></li>
+                    <li><span class="source-num">7</span><a href="https://thehackernews.com/2026/02/researchers-find-341-malicious-clawhub.html" target="_blank">The Hacker News - 341 Malicious ClawHub Skills</a></li>
+                    <li><span class="source-num">8</span><a href="https://www.praetorian.com/blog/praetorian-guard-finds-critical-flaws-in-openclaw-and-what-it-means-for-your-software-supply-chain/" target="_blank">Praetorian Guard - Critical Flaws in OpenClaw</a></li>
+                    <li><span class="source-num">9</span><a href="https://www.giskard.ai/knowledge/openclaw-security-vulnerabilities-include-data-leakage-and-prompt-injection-risks" target="_blank">Giskard - Data Leakage and Prompt Injection Risks</a></li>
+                    <li><span class="source-num">10</span><a href="https://www.hiddenlayer.com/research/exploring-the-security-risks-of-ai-assistants-like-openclaw" target="_blank">HiddenLayer - Security Risks of AI Assistants</a></li>
+                    <li><span class="source-num">11</span><a href="https://www.esecurityplanet.com/threats/openclaw-or-open-door-prompt-injection-creates-ai-backdoors/" target="_blank">eSecurity Planet - Prompt Injection Creates AI Backdoors</a></li>
+                    <li><span class="source-num">12</span><a href="https://www.nudgesecurity.com/post/from-github-star-to-security-nightmare-what-openclaw-ai-means-for-enterprise-saas-data" target="_blank">Nudge Security - GitHub Star to Security Nightmare</a></li>
+                    <li><span class="source-num">13</span><a href="https://www.firetail.ai/blog/openclaw-proved-it-you-have-shadow-agents-on-your-network-right-now" target="_blank">FireTail - Shadow Agents on Your Network</a></li>
+                    <li><span class="source-num">14</span><a href="https://www.bitsight.com/blog/openclaw-ai-security-risks-exposed-instances" target="_blank">BitSight - Exposed Instances Risk</a></li>
+                    <li><span class="source-num">15</span><a href="https://www.runzero.com/blog/openclaw/" target="_blank">runZero - OpenClaw RCE Vulnerability Analysis</a></li>
+                    <li><span class="source-num">16</span><a href="https://www.zscaler.com/blogs/product-insights/guide-openclaw-and-securing-it-zscaler" target="_blank">Zscaler - Guide to OpenClaw Security</a></li>
+                    <li><span class="source-num">17</span><a href="https://www.netskope.com/blog/moltbot-clawdbot-the-risky-personal-ai-agent-and-netskope-protection" target="_blank">Netskope - MoltBot Protection</a></li>
+                    <li><span class="source-num">18</span><a href="https://www.crowdstrike.com/en-us/blog/what-security-teams-need-to-know-about-openclaw-ai-super-agent/" target="_blank">CrowdStrike - OpenClaw AI Super Agent Guide</a></li>
+                    <li><span class="source-num">19</span><a href="https://www.sentinelone.com/blog/oneclaw-discovery-and-observability-for-the-agentic-era/" target="_blank">SentinelOne - OneClaw Discovery</a></li>
+                    <li><span class="source-num">20</span><a href="https://www.catonetworks.com/blog/when-ai-can-act-governing-openclaw/" target="_blank">Cato Networks - Governing OpenClaw</a></li>
+                </ul>
+            </div>
+
+            <div class="source-section">
+                <h4>🇨🇳 国内媒体报道</h4>
+                <ul class="source-list">
+                    <li><span class="source-num">1</span><a href="https://finance.sina.com.cn/tech/roll/2026-02-26/doc-inhpefhe4256181.shtml" target="_blank">新浪财经 - 谷歌封禁 OpenClaw 用户报道</a></li>
+                    <li><span class="source-num">2</span><a href="https://t.cj.sina.com.cn/articles/view/2833534593/a8e44e8102001b3t8?from=tech" target="_blank">新浪财经 - Anthropic 禁止 OpenClaw OAuth</a></li>
+                    <li><span class="source-num">3</span><a href="https://h5.ifeng.com/c/vivoArticle/v0021oYl1mM2gY9dj-_olsrOki57-_r1keEv--bIV3rzxd-_--WQ__?vivoBusiness=hiboardnews" target="_blank">凤凰网 - 全行业集体堵截 OpenClaw 分析</a></li>
+                    <li><span class="source-num">4</span><a href="https://36kr.com/p/3698746420933125" target="_blank">36氪 - 谷歌封禁 OpenClaw 事件</a></li>
+                    <li><span class="source-num">5</span><a href="https://finance.sina.com.cn/wm/2026-03-03/doc-inhpsicw4778277.shtml" target="_blank">新浪财经 - OpenClaw 登顶 GitHub 星标榜</a></li>
+                    <li><span class="source-num">6</span><a href="https://www.ithome.com/0/925/524.htm" target="_blank">IT之家 - OpenClaw 超越 Linux 报道</a></li>
+                    <li><span class="source-num">7</span><a href="https://cn-sec.com/archives/5037604.html" target="_blank">CN-SEC - 思科安全噩梦警告</a></li>
+                    <li><span class="source-num">8</span><a href="https://www.dwcon.cn/post/4724" target="_blank">数世咨询 - CISO 关键风险指南</a></li>
+                    <li><span class="source-num">9</span><a href="https://www.xtcaq.com/nd.jsp?id=10893" target="_blank">信通安全 - OpenClaw 大规模利用详情</a></li>
+                    <li><span class="source-num">10</span><a href="https://finance.sina.com.cn/jjxw/2026-03-03/doc-inhpspms7608021.shtml" target="_blank">新浪财经 - OpenClaw 高危风险警告</a></li>
+                    <li><span class="source-num">11</span><a href="https://www.secrss.com/articles/87654" target="_blank">安全内参 - 工信部官方预警</a></li>
+                    <li><span class="source-num">12</span><a href="http://news.10jqka.com.cn/20260304/c675075916.shtml" target="_blank">同花顺 - OpenClaw 爆火现象</a></li>
+                    <li><span class="source-num">13</span><a href="https://news.pedaily.cn/202602/560989.shtml" target="_blank">投资界 - OpenClaw 离谱用法分析</a></li>
+                    <li><span class="source-num">14</span><a href="https://www.53ai.com/news/Openclaw/2026021469754.html" target="_blank">53AI - 火山引擎 AI 助手安全方案</a></li>
+                </ul>
+            </div>
+
+            <div class="source-section">
+                <h4>🔒 官方安全公告</h4>
+                <ul class="source-list">
+                    <li><span class="source-num">1</span><a href="https://github.com/openclaw/openclaw/security/advisories/GHSA-g8p2-7wf7-98mq" target="_blank">GitHub Security Advisory - GHSA-g8p2-7wf7-98mq</a></li>
+                    <li><span class="source-num">2</span><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-25253" target="_blank">NVD - CVE-2026-25253 Details</a></li>
+                    <li><span class="source-num">3</span><a href="https://www.secrss.com/articles/87654" target="_blank">工信部 NVDB - 官方安全预警提示</a></li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p class="footer-text">
+            OpenClaw 风险分析报告 | 2026年3月5日<br>
+            数据来源：公开安全研究、CVE数据库、厂商公告、官方预警、媒体报道
+        </p>
+    </footer>
+
+    <!-- Image Modal/Lightbox -->
+    <div id="imageModal" class="image-modal">
+        <span class="modal-close">&times;</span>
+        <img class="modal-content" id="modalImage">
+        <div class="modal-caption" id="modalCaption"></div>
+    </div>
+
+    <script>
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar background on scroll
+        const nav = document.querySelector('.nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 100) {
+                nav.style.background = 'rgba(26, 35, 50, 0.95)';
+            } else {
+                nav.style.background = 'rgba(26, 35, 50, 0.9)';
+            }
+        });
+
+        // Image Modal/Lightbox functionality
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        const modalCaption = document.getElementById('modalCaption');
+        const closeBtn = document.querySelector('.modal-close');
+
+        // Add click event to all section images
+        document.querySelectorAll('.section-image').forEach(img => {
+            img.addEventListener('click', function() {
+                modal.style.display = 'block';
+                modalImg.src = this.src;
+                modalCaption.textContent = this.alt || '';
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            });
+        });
+
+        // Close modal when clicking the close button
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        });
+
+        // Close modal when clicking outside the image
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'block') {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+    </script>
+</body>
+</html>
